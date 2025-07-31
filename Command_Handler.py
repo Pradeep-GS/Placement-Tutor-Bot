@@ -2,8 +2,11 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters 
 import Commands_Text as ct
 from Ai_Chat import ai_trigger, handle_ai_input
+from dotenv import load_dotenv , dotenv_values
+import os
 
-TOKEN ="8107090405:AAGM3nLx7CZncHLPq2MnWLJJXb-KwEonzQQ"
+load_dotenv()
+TOKEN =os.getenv("TOKENS")
 bot = ApplicationBuilder().token(TOKEN).build()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
