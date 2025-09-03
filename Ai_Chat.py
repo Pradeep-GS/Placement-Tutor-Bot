@@ -5,7 +5,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key="YOUR_API_KEY"
 )
 
 user_states = {}
