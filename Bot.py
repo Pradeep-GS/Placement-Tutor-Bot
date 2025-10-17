@@ -25,6 +25,7 @@ else:
     all_users = []
 wait_msg={}
 
+# Basic Triggers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if chat_id not in all_users:
@@ -45,7 +46,7 @@ async def help_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "Hello! I’m your Placement Tutor Bot 🤖. Use /ai to get today’s LeetCode question."
     await update.message.reply_text(msg, parse_mode="Markdown")
 
-
+# leetcode answer recive from user and verify
 async def give_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     wait_msg[chat_id]=True
@@ -60,15 +61,16 @@ async def receive_Leetcode_answer(update:Update,context:ContextTypes.DEFAULT_TYP
         await update.message.reply_text(answer,parse_mode="Markdown")
         wait_msg[chat_id]=False
 
+# Questoins taking at time
 async def send_daily_question(app):
     while True:
         now = datetime.now()
-        target_time = now.replace(hour=22, minute=46, second=0, microsecond=0)
+        target_time = now.replace(hour=23, minute=13, second=0, microsecond=0)
         if now >= target_time:
             target_time += timedelta(days=1)
 
         wait_seconds = (target_time - now).total_seconds()
-        print(f"Waiting {wait_seconds / 60:.2f} minutes until 6 AM...")
+        print(f"Waiting {wait_seconds / 60:.2f}")
         await asyncio.sleep(wait_seconds)
 
         question_text = totelegram()
@@ -78,9 +80,17 @@ async def send_daily_question(app):
             except Exception as e:
                 print(f"Could not send to {chat_id}: {e}")
 
+        await asyncio.sleep(5)
+
+        answer=leetcode_answer_generator(title=title())
+        for chat_id in all_users:
+            try:
+                await app.bot.send_message(chat_id=chat_id, text=answer , parse_mode="Markdown")
+            except Exception as e:
+                print(f"Could not send to {chat_id}: {e}")
+      
 async def on_startup(app):
     app.create_task(send_daily_question(app))
-
 
 app = ApplicationBuilder().token(TOKEN).post_init(on_startup).build()
 

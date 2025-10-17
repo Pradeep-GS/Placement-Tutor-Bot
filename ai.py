@@ -30,3 +30,7 @@ def ai_answer_generator(qus):
 def leetcode_answer_check(title,mysol):
     prompt=f"""I solved the LeetCode problem{title} and my solution is {mysol} this is correct or not just say yes correct or no wrong if wrong give me the percentage of i was near to answer don't give solution  """
     return ai_answer_generator(prompt)
+
+def leetcode_answer_generator(title):
+    prompt = f"""Give me the solution for for leetcode qustion {title} in all language"""
+    return ai_answer_generator(prompt)
