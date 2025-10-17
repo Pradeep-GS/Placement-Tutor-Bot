@@ -1,5 +1,11 @@
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 from dotenv import load_dotenv
 import os
 import asyncio
@@ -17,7 +23,7 @@ if os.path.exists(USERS_FILE):
         all_users = json.load(f)
 else:
     all_users = []
-
+wait_msg={}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -38,6 +44,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "Hello! I’m your Placement Tutor Bot 🤖. Use /ai to get today’s LeetCode question."
     await update.message.reply_text(msg, parse_mode="Markdown")
+
+
+async def give_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    wait_msg[chat_id]=True
+    await update.message.reply_text("Please Give Your Answer")
+async def receive_Leetcode_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
+    chat_id=update.effective_chat.id
+    text=update.message.text
+    if wait_msg.get(chat_id):
+        print(f"Your Text {text}")
+        await update.message.reply_text("Hello From answer",parse_mode="Markdown")
 
 
 async def send_daily_question(app):
@@ -61,8 +79,14 @@ async def send_daily_question(app):
 
 async def on_startup(app):
     app.create_task(send_daily_question(app))
+
+
 app = ApplicationBuilder().token(TOKEN).post_init(on_startup).build()
+
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("help", help_trigger))
+app.add_handler(CommandHandler("ai",give_answer))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,receive_Leetcode_answer))
+
 print("🤖 Bot Started and Scheduler Running...")
 app.run_polling()
