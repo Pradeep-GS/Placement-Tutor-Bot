@@ -1,38 +1,30 @@
-from telegram import Update
-from telegram.ext import ContextTypes
 from openai import OpenAI
+import os
+from dotenv import load_dotenv
 
-
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="YOUR_API_KEY"
+    api_key=API_KEY
 )
 
-user_states = {}
+def ai_answer_generator():
+    try:
+        completion = client.chat.completions.create(
+            model="openai/gpt-3.5-turbo-0613",
+            messages=[
+                {"role": "user", "content": "Hello Who Are You"}
+            ],
+            extra_headers={
+                "HTTP-Referer": "https://your-site.com",
+                "X-Title": "Placement-Tutor-Bot"
+            }
+        )
+        answer = completion.choices[0].message.content
+        print(answer)
+        return answer
 
-async def ai_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    user_states[user_id] = "awaiting_ai_input"
-    await update.message.reply_text("🧠 Send me your question, and I'll think like ChatGPT!")
-
-async def handle_ai_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_states.get(user_id) == "awaiting_ai_input":
-        user_message = update.message.text
-        await update.message.reply_text("Thinking... 🤔")
-        
-        try:
-            completion = client.chat.completions.create(
-                model="openai/gpt-3.5-turbo-0613",
-                messages=[{"role": "user", "content": user_message}],
-                extra_headers={
-                    "HTTP-Referer": "https://your-site.com",
-                    "X-Title": "Placement-Tutor-Bot"          
-                }
-            )
-            answer = completion.choices[0].message.content
-            await update.message.reply_text(answer)
-        except Exception as e:
-            await update.message.reply_text(f"❌ Error: {str(e)}")
-        print(user_states)
-        user_states.pop(user_id)
+    except Exception as e:
+        return e
+ai_answer_generator()

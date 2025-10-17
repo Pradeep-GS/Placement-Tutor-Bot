@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import os
 import asyncio
 from datetime import datetime, timedelta
-from LeetCode_Scrapping import *
+from leetcode import *
 import json
 
 load_dotenv()
