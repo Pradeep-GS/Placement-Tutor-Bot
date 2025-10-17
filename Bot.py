@@ -12,7 +12,7 @@ import asyncio
 from datetime import datetime, timedelta
 from leetcode import *
 import json
-
+from ai import *
 load_dotenv()
 TOKEN = os.getenv("TOKENS")
 
@@ -49,19 +49,21 @@ async def help_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def give_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     wait_msg[chat_id]=True
+    if wait_msg.get(chat_id):
+        context.user_data["problem_title"]=title()
     await update.message.reply_text("Please Give Your Answer")
 async def receive_Leetcode_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
     chat_id=update.effective_chat.id
     text=update.message.text
     if wait_msg.get(chat_id):
-        print(f"Your Text {text}")
-        await update.message.reply_text("Hello From answer",parse_mode="Markdown")
-
+        answer=leetcode_answer_check(context.user_data.get("problem_title"),text)
+        await update.message.reply_text(answer,parse_mode="Markdown")
+        wait_msg[chat_id]=False
 
 async def send_daily_question(app):
     while True:
         now = datetime.now()
-        target_time = now.replace(hour=23, minute=56, second=0, microsecond=0)
+        target_time = now.replace(hour=22, minute=46, second=0, microsecond=0)
         if now >= target_time:
             target_time += timedelta(days=1)
 
@@ -76,7 +78,6 @@ async def send_daily_question(app):
             except Exception as e:
                 print(f"Could not send to {chat_id}: {e}")
 
-
 async def on_startup(app):
     app.create_task(send_daily_question(app))
 
@@ -88,5 +89,8 @@ app.add_handler(CommandHandler("help", help_trigger))
 app.add_handler(CommandHandler("ai",give_answer))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,receive_Leetcode_answer))
 
-print("🤖 Bot Started and Scheduler Running...")
-app.run_polling()
+try:
+    print("Bot Started")
+    app.run_polling()
+except KeyboardInterrupt:
+    print("Bot Stopped")

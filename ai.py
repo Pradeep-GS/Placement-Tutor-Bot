@@ -1,7 +1,8 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-
+from telegram import Update
+from telegram.ext import ContextTypes
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 client = OpenAI(
@@ -9,12 +10,12 @@ client = OpenAI(
     api_key=API_KEY
 )
 
-def ai_answer_generator():
+def ai_answer_generator(qus):
     try:
         completion = client.chat.completions.create(
             model="openai/gpt-3.5-turbo-0613",
             messages=[
-                {"role": "user", "content": "Hello Who Are You"}
+                {"role": "user", "content": qus}
             ],
             extra_headers={
                 "HTTP-Referer": "https://your-site.com",
@@ -22,9 +23,10 @@ def ai_answer_generator():
             }
         )
         answer = completion.choices[0].message.content
-        print(answer)
         return answer
 
     except Exception as e:
         return e
-ai_answer_generator()
+def leetcode_answer_check(title,mysol):
+    prompt=f"""I solved the LeetCode problem{title} and my solution is {mysol} this is correct or not just say yes correct or no wrong if wrong give me the percentage of i was near to answer don't give solution  """
+    return ai_answer_generator(prompt)
