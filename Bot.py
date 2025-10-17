@@ -1,18 +1,13 @@
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, ContextTypes, filters
 from dotenv import load_dotenv
 import os
 import asyncio
 from datetime import datetime, timedelta
-from leetcode import *
 import json
+from leetcode import *
 from ai import *
+
 load_dotenv()
 TOKEN = os.getenv("TOKENS")
 
@@ -23,81 +18,85 @@ if os.path.exists(USERS_FILE):
         all_users = json.load(f)
 else:
     all_users = []
-wait_msg={}
 
-# Basic Triggers
+user_states = {}
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if chat_id not in all_users:
         all_users.append(chat_id)
         with open(USERS_FILE, "w") as f:
             json.dump(all_users, f)
-    msg = """👋 *Welcome to Placement Tutor Bot!*
-🚀 This bot helps you prepare for placements by sending:
-🧠 Daily *unsolved LeetCode* coding questions  
-📝 Daily *IndiaBix aptitude* questions  
-🕘 You’ll have *9 hours* to respond — the bot checks your answers!  
-🎥 If wrong, it sends the correct answer + tutorial link.
-"""
-    await update.message.reply_text(msg, parse_mode="Markdown")
-
+    msg = """👋 Welcome to Placement Tutor Bot!
+Daily unsolved LeetCode questions and aptitude questions will be sent to you.
+You have 9 hours to answer; correct answers and tutorial links will be provided if wrong."""
+    await update.message.reply_text(msg)
 
 async def help_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "Hello! I’m your Placement Tutor Bot 🤖. Use /ai to get today’s LeetCode question."
-    await update.message.reply_text(msg, parse_mode="Markdown")
+    msg = "Use this bot to get daily coding and aptitude questions. Answer them here or ask AI questions anytime."
+    await update.message.reply_text(msg)
 
-# leetcode answer recive from user and verify
-async def give_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
+async def trigger_leetcode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    wait_msg[chat_id]=True
-    if wait_msg.get(chat_id):
-        context.user_data["problem_title"]=title()
-    await update.message.reply_text("Please Give Your Answer")
-async def receive_Leetcode_answer(update:Update,context:ContextTypes.DEFAULT_TYPE):
-    chat_id=update.effective_chat.id
-    text=update.message.text
-    if wait_msg.get(chat_id):
-        answer=leetcode_answer_check(context.user_data.get("problem_title"),text)
-        await update.message.reply_text(answer,parse_mode="Markdown")
-        wait_msg[chat_id]=False
+    user_states[chat_id] = "leetcode"
+    context.user_data["problem_title"] = title()
+    await update.message.reply_text("Please give your answer for today's LeetCode question:")
 
-# Questoins taking at time
-async def send_daily_question(app):
+async def trigger_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    user_states[chat_id] = "ai"
+    await update.message.reply_text("Ask any question and I will answer in a professional way:")
+
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    text = update.message.text
+    state = user_states.get(chat_id)
+
+    if state == "leetcode":
+        answer = leetcode_answer_check(context.user_data.get("problem_title"), text)
+        await update.message.reply_text(answer)
+        user_states[chat_id] = None
+    elif state == "ai":
+        answer = ask_anything(text)
+        await update.message.reply_text(answer)
+        user_states[chat_id] = None
+
+async def scheduler(app, question_hour=23, question_minute=0, answer_delay_hours=9):
     while True:
         now = datetime.now()
-        target_time = now.replace(hour=23, minute=13, second=0, microsecond=0)
+        target_time = now.replace(hour=question_hour, minute=question_minute, second=0, microsecond=0)
         if now >= target_time:
             target_time += timedelta(days=1)
-
         wait_seconds = (target_time - now).total_seconds()
-        print(f"Waiting {wait_seconds / 60:.2f}")
         await asyncio.sleep(wait_seconds)
 
         question_text = totelegram()
         for chat_id in all_users:
             try:
+                user_states[chat_id] = "leetcode"
+                context = {}
+                context["problem_title"] = title()
                 await app.bot.send_message(chat_id=chat_id, text=question_text)
             except Exception as e:
                 print(f"Could not send to {chat_id}: {e}")
 
-        await asyncio.sleep(5)
-
-        answer=leetcode_answer_generator(title=title())
+        await asyncio.sleep(answer_delay_hours * 3600)
+        answer_text = leetcode_answer_generator(title())
         for chat_id in all_users:
             try:
-                await app.bot.send_message(chat_id=chat_id, text=answer , parse_mode="Markdown")
+                await app.bot.send_message(chat_id=chat_id, text=answer_text)
             except Exception as e:
                 print(f"Could not send to {chat_id}: {e}")
-      
+
 async def on_startup(app):
-    app.create_task(send_daily_question(app))
+    app.create_task(scheduler(app))
 
 app = ApplicationBuilder().token(TOKEN).post_init(on_startup).build()
-
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("help", help_trigger))
-app.add_handler(CommandHandler("ai",give_answer))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,receive_Leetcode_answer))
+app.add_handler(CommandHandler("answer", trigger_leetcode))
+app.add_handler(CommandHandler("ai", trigger_ai))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
 try:
     print("Bot Started")

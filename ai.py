@@ -34,3 +34,12 @@ def leetcode_answer_check(title,mysol):
 def leetcode_answer_generator(title):
     prompt = f"""Give me the solution for for leetcode qustion {title} in all language"""
     return ai_answer_generator(prompt)
+def ask_anything(quer):
+    prompt = f"""
+You are an expert in all technical and professional subjects. 
+Answer the following question in a professional, clear, and detailed manner. 
+Use structured explanations, examples if needed, and keep the language formal and precise.
+Question: {quer}
+"""
+    return ai_answer_generator(prompt)
+ 
