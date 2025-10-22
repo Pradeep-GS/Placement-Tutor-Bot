@@ -61,7 +61,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer)
         user_states[chat_id] = None
 
-async def scheduler(app, question_hour=23, question_minute=0, answer_delay_hours=9):
+async def scheduler(app, question_hour=10, question_minute=37, answer_delay_hours=9):
     while True:
         now = datetime.now()
         target_time = now.replace(hour=question_hour, minute=question_minute, second=0, microsecond=0)
@@ -80,7 +80,8 @@ async def scheduler(app, question_hour=23, question_minute=0, answer_delay_hours
             except Exception as e:
                 print(f"Could not send to {chat_id}: {e}")
 
-        await asyncio.sleep(answer_delay_hours * 3600)
+        # await asyncio.sleep(answer_delay_hours * 3600)
+        await asyncio.sleep(20)
         answer_text = leetcode_answer_generator(title())
         for chat_id in all_users:
             try:
