@@ -21,6 +21,12 @@ A smart AI-powered Telegram-based learning assistant designed to help students p
 This bot aims to build consistency in problem-solving and make placement preparation smarter, faster, and more accessible.
 
 
+
 ```bash
 
 pip install -r requirements.txt
+
+
+```bash
+
+python bot.py
